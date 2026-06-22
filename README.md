@@ -190,11 +190,6 @@ grounded, cited evidence and tells you to set a key — so the pipeline always r
 
 ## ⚙️ Installation
 
-```bash
-git clone <your-repo-url> cfpb-rag && cd cfpb-rag
-
-python -m venv .venv && source .venv/bin/activate   # optional
-
 # CPU-only torch first if you have no GPU (keeps the install small):
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 
@@ -331,5 +326,5 @@ cfpb-rag/
 
 ## 📜 License & data
 
-Code: MIT (add your `LICENSE`). Complaint data is published by the CFPB as a
+Code: MIT License. Complaint data is published by the CFPB as a
 public resource; narratives are already PII-redacted at source.
