@@ -1,0 +1,92 @@
+# ============================================================================
+# Configuration for the CFPB Semantic Search & RAG Engine
+# Every path, model name, and hyperparameter the pipeline uses lives here.
+# Swapping the sample for the full multi-million-row CFPB dump is a one-line
+# change to `data.raw_csv` (see README -> "Scaling to the full dataset").
+# ============================================================================
+
+data:
+  # Point this at the full public CFPB export to scale from 200 -> millions.
+  raw_csv: "data/raw/CFPB_Consumer_Complaints_2024.csv"
+  processed_corpus: "data/processed/corpus.parquet"
+  # Column names in the CFPB schema. Centralised so a schema change is one edit.
+  text_column: "consumer_complaint_narrative"
+  id_column: "complaint_id"
+  metadata_columns:
+    - "product"
+    - "subproduct"
+    - "issue"
+    - "subissue"
+    - "company_name"
+    - "state"
+    - "date_received"
+
+cleaning:
+  # CFPB redacts PII with runs of "XXXX". Collapse runs to a single token so
+  # they don't dominate term statistics, but keep one marker for context.
+  collapse_redactions: true
+  redaction_token: "[REDACTED]"
+  strip_redactions: false      # if true, remove redaction markers entirely
+
+chunking:
+  # One of: whole_document | fixed_size | sentence_window
+  strategy: "sentence_window"
+  fixed_size:
+    chunk_size: 180            # words per chunk
+    overlap: 40               # word stride overlap
+  sentence_window:
+    window_size: 4            # sentences per window
+    overlap: 1                # sentences shared between adjacent windows
+
+embeddings:
+  # Each entry is benchmarked independently by the evaluation harness.
+  models:
+    - name: "all-MiniLM-L6-v2"
+      hf_id: "sentence-transformers/all-MiniLM-L6-v2"
+    - name: "bge-small-en-v1.5"
+      hf_id: "BAAI/bge-small-en-v1.5"
+      # BGE models want an instruction prefix on the *query* side only.
+      query_prefix: "Represent this sentence for searching relevant passages: "
+  batch_size: 64
+  normalize: true             # cosine similarity == dot product on unit vectors
+
+vector_db:
+  # Qdrant in embedded/local mode -> no Docker required for the sample.
+  # Set mode: "server" + host/port to talk to a Dockerised Qdrant at scale.
+  mode: "local"
+  local_path: "data/processed/qdrant"
+  host: "localhost"
+  port: 6333
+  distance: "Cosine"
+
+retrieval:
+  k_values: [1, 3, 5, 10]
+  primary_k: 10               # k used for the headline leaderboard metrics
+  hybrid:
+    enabled: true
+    rrf_k: 60                 # Reciprocal Rank Fusion constant
+
+evaluation:
+  # Ground truth: a retrieved doc is relevant to a query complaint if they
+  # share the same `issue` label (and `product` if require_product: true).
+  relevance_labels: ["issue"]
+  require_product: true
+  query_sample_size: 60       # held-out complaints used as queries
+  random_seed: 42
+
+rag:
+  provider: "anthropic"       # anthropic | openai
+  anthropic_model: "claude-sonnet-4-6"
+  openai_model: "gpt-4o-mini"
+  top_k: 5
+  # If the best retrieved cosine score is below this, refuse to answer.
+  min_confidence: 0.30
+  max_context_chars: 8000
+
+reports:
+  metrics_dir: "reports/metrics"
+  figures_dir: "reports/figures"
+  leaderboard_csv: "reports/metrics/leaderboard.csv"
+
+logging:
+  level: "INFO"

@@ -1,0 +1,37 @@
+# ============================================================================
+# CFPB Semantic Search & RAG Engine — dependencies
+# Python 3.10–3.12 recommended.
+#
+# Version notes:
+# * sentence-transformers >=3.0 requires torch >=2.1. If you are on CPU-only
+#   hardware, install torch from the CPU wheel index first, e.g.:
+#       pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   then `pip install -r requirements.txt`.
+# * qdrant-client >=1.12 uses the `query_points` API (this code targets it).
+# ============================================================================
+
+# --- Core data / numerics ---
+pandas>=2.0,<3.0
+numpy>=1.24,<3.0
+pyarrow>=14.0          # Parquet I/O for the processed corpus
+pyyaml>=6.0
+
+# --- Embeddings & dense retrieval ---
+sentence-transformers>=3.0,<6.0
+torch>=2.1             # pulled in by sentence-transformers; pin for clarity
+qdrant-client>=1.12
+
+# --- Sparse retrieval ---
+rank-bm25>=0.2.2
+
+# --- Evaluation & dimensionality reduction ---
+scikit-learn>=1.3     # t-SNE fallback for the embedding projection
+umap-learn>=0.5.5     # preferred 2D projection (optional; t-SNE used if absent)
+
+# --- Visualisation ---
+matplotlib>=3.7
+seaborn>=0.13
+
+# --- RAG generation (install whichever provider you use) ---
+anthropic>=0.40       # provider: anthropic
+openai>=1.40          # provider: openai
